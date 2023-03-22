@@ -1,0 +1,48 @@
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "maya-stubs>=0.3.1",
+]
+
+[project]
+name = "maya-mirage"
+version = "0.1.0"
+description = "Friendly interfaces to maya's Python Api 2"
+authors = [
+    {name = "Ed Whetstone"},
+]
+dependencies = [
+]
+requires-python = ">=3.7"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+keywords = [
+    "maya",
+    "maya api",
+    "maya api 2",
+    "maya api 2.0",
+    "pymel"
+]
+
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+]
+
+[project.urls]
+homepage = "https://github.com/sharpencrag/maya-mirage"
+documentation = "https://github.com/sharpencrag/maya-mirage#readme"
+repository = "https://github.com/sharpencrag/maya-mirage"
+
+[build-system]
+requires = ["pdm-pep517>=1.0"]
+build-backend = "pdm.pep517.api"
