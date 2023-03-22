@@ -52,13 +52,13 @@ name strings.  Just pass the command to the "from_cmd" constructor and any
 required keyword arguments.
 
 for example, to get the current selection list as MirageNodes:
-
-    nodes = MirageNode.from_cmd("ls", sl=True)
-
+```python
+nodes = MirageNode.from_cmd("ls", sl=True)
+```
 this is equivalent to the following comprehension:
-
-    nodes = [MirageNode.from_name(name) for name in cmds.ls(sl=True)]
-
+```python
+nodes = [MirageNode.from_name(name) for name in cmds.ls(sl=True)]
+```
 Note that **MirageNode.from_cmd will ALWAYS return a list of nodes**, even if the
 list only has a single item.
 
