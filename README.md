@@ -98,6 +98,10 @@ directly assign an attribute values dictionary-style (__setitem__):
 my_mirage_node["someAttribute"] = 5.0
 ```
 
+This is equivalent to the long way:
+```python
+my_mirage_node.attr("someAttribute").value = 5.0
+```
 Adding New Dynamic Attributes:
 ------------------------------
 MirageNode provides a simple interface for creating the same attribute
@@ -118,11 +122,11 @@ assert new_attr.short_name == "mna"
 ```
 
 These methods also provide two ways to set values on the newly-created
-attributes, a default_value, and an initial_value.
+attributes, a `default_value`, and an `initial_value`.
 
 It is valid and encouraged to use both.  The "default_value" sets a default
 that is stored with the maya node and can be compared against, whereas
-"initial_value" just sets the value after creating the attribute.
+"initial_value" sets the value after creating the attribute.
 
 for example:
 ```python
