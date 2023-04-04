@@ -5,7 +5,7 @@
 The test suite runs against Maya 2024, but any version of maya above 2018 should
 work!
 
-Full API documentation will be coming soon.
+Full API documentation will be coming soon!
 
 Overview
 --------
