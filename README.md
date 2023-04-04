@@ -1,12 +1,62 @@
 # Mirage - Friendly Node Interfaces for Maya
 
-Mirage is a convenient interface to Maya's boilerplate-heavy OpenMaya Api 2.0.
+`Mirage` is a convenient interface to Maya's boilerplate-heavy OpenMaya Api 2.0.
 
-DESIGN
-------
-Maya nodes are represented by `MirageNode`, and attributes as `MirageAttr`.
+The test suite runs against Maya 2024, but any version of maya above 2018 should
+work!
 
-The major design goal: *first convenience*, *second speed*.
+Full API documentation will be coming soon.
+
+Overview
+--------
+Maya nodes are represented by `MirageNode`s, and attributes by `MirageAttr`s.
+
+Example usage:
+
+```python
+# move all mesh transforms by 3 units on X and Z
+mesh_nodes = mirage.ls(type="mesh")
+xforms = [n.parent for n in mesh_nodes]
+for xform in xforms:
+    xform["transform"] += [3, 0, 3]
+```
+
+```python
+# Make a rainbow ramp node and apply it to a shader
+sphere = MirageNode("mySphere")
+ramp = mirage.shading_node("ramp", asTexture=True)
+ramp["colorEntryList"] = [
+    [0.0, [1, 0, 0]],
+    [0.5, [0, 1, 0]],
+    [1.0, [0, 0, 1]],
+]
+surface = sphere.shading_group["surfaceShader"]
+ramp["outColor"].connect_to(surface["outColor"])
+```
+
+```python
+# Get and set node properties and hierarchies
+
+# property aliases to node information
+sphere = MirageNode("mySphere")
+sphere.type_name    # "transform"
+sphere.name         # shortest unique name
+sphere.long_name    # long name including group
+sphere.uuid         # unique identifier for the node
+sphere.parent       # the parent of this node
+sphere.children     # any direct children of this node
+# ... etc.
+
+# declarative interface
+sphere.name = "foo"           # name is now "foo"
+sphere.namespace = "FOO"      # "FOO:foo"
+sphere.parent = another_node  # move under a parent
+sphere.parent = None          # move back under the root
+sphere.selected = True        # select the node
+# ... etc.
+```
+
+The major design goals: *first, convenience*, *second, speed*.
 
 Many of the properties and methods on the MirageNode are just thin wrappers to
 OpenMaya's functionality with nicer names and interfaces; Others employ tricks
@@ -14,10 +64,14 @@ to evaluate the scene in an optimized way that is non-obvious or difficult to
 employ on-the-fly when writing OpenMaya code.
 
 Mirage is designed to provide a simple interface to many common
-maya tasks, but its coverage of OpenMaya and cmds is **not comprehensive**.
+maya tasks, but its coverage of OpenMaya and cmds is **not comprehensive**.  In particular, specific support for animation data is lacking - there is currently no way to obtain an attribute's value at a specific time, for instance.
 
-In later iterations, coverage of more features may be added.
+In later iterations, more features may be added.
 
+Existing Solutions
+------------------
+
+This is not the first time we've re-invented this particular wheel.  `PyMel` has shipped with Maya for years (until v2024), but it's incredibly slow, and it is intrinsically tied to the semantics of the `cmds` module.  [Mottosso](https://github.com/mottosso)'s excellent [cmdx project](https://github.com/mottosso/cmdx) is a lot closer to Mirage in functionality, and is a great choice as a PyMel alternative as well.
 
 Creating MirageNodes
 --------------------
@@ -31,6 +85,7 @@ a = MirageNode.from_name("persp")
 b = MirageNode.from_name("persp")
 assert a is not b
 ```
+
 If getting the same python object is important to your use-case, you can
 use the from_*_cached versions of the constructors, which will always
 return the same object at a small penalty in speed of instantiation::
@@ -43,7 +98,24 @@ assert a is b
 MirageNodes can also be obtained using uuids:
 ```python
 a = MirageNode.from_uuid(...)
+# or
+a = MirageNode.from_uuid_cached(...)
 ```
+
+any two MirageNodes built from the same underlying maya object share the same
+hash, and can be used both as dictionary keys and compared for equivalency,
+even if they aren't the same object in memory:
+
+```python
+a = MirageNode.from_name("persp")
+b = MirageNode.from_name("persp")
+node_dict = {a: True}
+
+assert node_dict[b] is True
+assert a == b
+assert a is not b
+```
+
 
 Using Maya's `cmds` module
 --------------------------
@@ -57,25 +129,10 @@ nodes = MirageNode.from_cmd("ls", sl=True)
 ```
 this is equivalent to the following comprehension:
 ```python
-nodes = [MirageNode.from_name(name) for name in cmds.ls(sl=True)]
+nodes = [MirageNode(name) for name in cmds.ls(sl=True)]
 ```
 Note that **MirageNode.from_cmd will ALWAYS return a list of nodes**, even if the
 list only has a single item.
-
-Usage in Dicts and Sets
------------------------
-any two MirageNodes built from the same underlying maya object share the same
-hash, and can be used both as dictionary keys and compared for equivalency:
-
-```python
-a = MirageNode.from_name("persp")
-b = MirageNode.from_name("persp")
-node_dict = {a: True}
-
-assert node_dict[b] is True
-assert a == b
-assert a is not b
-```
 
 Accessing Attributes
 --------------------

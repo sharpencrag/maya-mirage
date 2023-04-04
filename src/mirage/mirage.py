@@ -2,6 +2,7 @@ import enum
 import re
 from functools import lru_cache
 from contextlib import contextmanager
+import operator
 
 from typing import (
     Any,
@@ -257,6 +258,30 @@ class MirageNode:
                 `cmds.createNode`
         """
         return cls.from_cmd("createNode", node_type, *args, **kwargs)  # type: ignore
+
+    @classmethod
+    def shading_node(cls, *args, **kwargs) -> "MirageNode":
+        """Alt Constructor: create and return a shading node.
+
+        Args:
+            *args: positional arguments for creating the maya node using
+                `cmds.shadingNode`
+            **kwargs: keyword-arguments for creating the maya node using
+                `cmds.shadingNode`
+        """
+        return cls.from_cmd("shadingNode", *args, **kwargs)[0]
+
+    @classmethod
+    def ls(cls, *args, **kwargs) -> List["MirageNode"]:
+        """Alt Constructor: Returns a list of MirageNodes from maya node names.
+
+        Args:
+            *args: positional arguments for creating the maya node using
+                `cmds.ls`
+            **kwargs: keyword-arguments for creating the maya node using
+                `cmds.ls`
+        """
+        return cls.from_cmd("ls", *args, **kwargs)
 
     @classmethod
     def get_or_create_node(
@@ -1724,6 +1749,36 @@ class MirageAttr:
         """Returns True if the attribute name and target node are the same."""
         return isinstance(other, self.__class__) and self.full_name == other.full_name
 
+    def _iop(self, other: Any, op: Callable):
+        """Performs an in-place operation on the attribute value.
+
+        Args:
+            other (Any): The value to perform the operation on.
+
+            op (Callable): The operation to perform.
+        """
+        if isinstance(other, Iterable):
+            ret = []
+            for i, value in enumerate(other):
+                ret.append(op(self[i].value, value))
+            return ret
+        elif isinstance(other, MirageAttr):
+            return op(self.value, other.value)
+        else:
+            return op(self.value, other)
+
+    def __iadd__(self, other: Any):
+        """Adds the value of the other attribute to this one."""
+        return self._iop(other, operator.add)
+
+    def __isub__(self, other: Any):
+        """Subtracts the value of the other attribute from this one."""
+        return self._iop(other, operator.sub)
+
+    def __imul__(self, other: Any):
+        """Multiplies the value of the other attribute to this one."""
+        return self._iop(other, operator.mul)
+
 
 # ATTRIBUTE CREATION
 
@@ -1872,7 +1927,6 @@ def _make_string_attr(
     data_obj = data_block.create()
     data_block.set(default_value)
     return fn_set.create(long_name, short_name, OpenMaya.MFnData.kString, data_obj)
-
 
 # ATTRIBUTE GETTER AND SETTERS
 
@@ -2271,6 +2325,16 @@ class AttrCreationContext:
         if hasattr(self, "m_attr") and self.m_attr is not None:
             self.add_attr()
 
+# FUNCTION ALIASES
+
+def ls(*args, **kwargs):
+    return MirageNode.ls(*args, **kwargs)
+
+def create_node(*args, **kwargs):
+    return MirageNode.create_node(*args, **kwargs)
+
+def shading_node(*args, **kwargs):
+    return MirageNode.shading_node(*args, **kwargs)
 
 # OPENMAYA ENUMERATOR UTILITIES
 

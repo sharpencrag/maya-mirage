@@ -1,13 +1,14 @@
 [tool.pdm]
 [tool.pdm.dev-dependencies]
 dev = [
-    "maya-stubs>=0.3.1",
+    "nox>=2022.11.21",
 ]
+
 
 [project]
 name = "maya-mirage"
 version = "0.1.0"
-description = "Friendly interfaces to maya's Python Api 2"
+description = "Friendly interfaces to maya's Python Api 2.0"
 authors = [
     {name = "Ed Whetstone"},
 ]
@@ -44,5 +45,5 @@ documentation = "https://github.com/sharpencrag/maya-mirage#readme"
 repository = "https://github.com/sharpencrag/maya-mirage"
 
 [build-system]
-requires = ["pdm-pep517>=1.0"]
-build-backend = "pdm.pep517.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

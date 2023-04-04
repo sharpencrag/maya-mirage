@@ -20,9 +20,13 @@ from mirage import mirage as mirage_internal
 from maya import cmds
 from maya.api import OpenMaya
 
+if not hasattr(cmds, "about"):
+    import maya.standalone
+    maya.standalone.initialize()
+
+cmds.scriptEditorInfo(sr=False, se=True)  # only report errors
 
 # UTILITIES
-
 
 def cmds_attr(attr):
     return cmds.getAttr(attr.full_name)
@@ -749,6 +753,21 @@ class TestMirageAttrSimpleValueAssignment(unittest.TestCase):
         self.assertFalse(self.visibility.value)
         self.assertEqual(self.visibility.value, cmds.getAttr(self.visibility.full_name))
 
+    def test_compound_assignment_add(self):
+        self.translate_x.value = 2.0
+        self.translate_x.value += 3.0
+        self.assertAlmostEqual(self.translate_x.value, 5.0)
+
+    def test_compound_assignment_sub(self):
+        self.translate_x.value = 2.0
+        self.translate_x.value -= 3.0
+        self.assertAlmostEqual(self.translate_x.value, -1.0)
+
+    def test_compound_assignment_mul(self):
+        self.translate_x.value = 2.0
+        self.translate_x.value *= 3.0
+        self.assertAlmostEqual(self.translate_x.value, 6.0)
+
 
 class TestGetApiMultiAttributes(unittest.TestCase):
     """Tests getting "multi" (compound, array) attributes"""
@@ -815,14 +834,17 @@ class TestGetMirageAttrConnections(unittest.TestCase):
     """Tests retrieval of attribute connections via MirageAttr"""
 
     def setUp(self):
-        self.lambert_node = mirage.MirageNode.from_name("lambert1")
-        self.initial_shading_group = mirage.MirageNode.from_name("initialShadingGroup")
-        self.light_link_node = mirage.MirageNode.from_name("lightLinker1")
+        # NOTE: this test will fail in Maya below 2024
+        # TODO: find a better default node to run this test against, or make
+        # a new node to test against
+        self.surface_node = mirage.MirageNode("standardSurface1")
+        self.initial_shading_group = mirage.MirageNode("initialShadingGroup")
+        self.light_link_node = mirage.MirageNode("lightLinker1")
 
     def test_get_destination_connection(self):
         self.assertEqual(
             self.initial_shading_group["surfaceShader"].value,
-            self.lambert_node["outColor"],
+            self.surface_node["outColor"],
         )
 
     def test_get_nested_compound_connection(self):
@@ -850,9 +872,43 @@ class TestSetMultiAttributesDAG(unittest.TestCase):
         expected_default_value = [0, 0, 0]
         new_value = [1, 2, 3]
 
-        self.assertCountEqual(self.cube_node["translate"].value, expected_default_value)
+        self.assertEqual(self.cube_node["translate"].value, expected_default_value)
         self.cube_node["translate"] = new_value
-        self.assertCountEqual(self.cube_node["translate"].value, new_value)
+        self.assertEqual(self.cube_node["translate"].value, new_value)
+
+    def test_compound_assignment_compound_operand_add(self):
+        expected_default_value = [0, 0, 0]
+        new_value = [1, 2, 3]
+        third_value = [2, 3, 4]
+
+        self.assertEqual(self.cube_node["translate"].value, expected_default_value)
+        self.cube_node["translate"] += new_value
+        self.assertEqual(self.cube_node["translate"].value, new_value)
+        self.cube_node["translate"] += [1, 1, 1]
+        self.assertEqual(self.cube_node["translate"].value, third_value)
+
+    def test_compound_assignment_compound_operand_sub(self):
+        expected_default_value = [0, 0, 0]
+        new_value = [-1, -2, -3]
+        third_value = [-2, -3, -4]
+
+        self.assertEqual(self.cube_node["translate"].value, expected_default_value)
+        self.cube_node["translate"] -= [1, 2, 3]
+        self.assertEqual(self.cube_node["translate"].value, new_value)
+        self.cube_node["translate"] -= [1, 1, 1]
+        self.assertEqual(self.cube_node["translate"].value, third_value)
+
+    def test_compound_assignment_compound_operand_mul(self):
+        expected_default_value = [0, 0, 0]
+        new_value = [1, 2, 3]
+        third_value = [2, 4, 6]
+
+        self.assertEqual(self.cube_node["translate"].value, expected_default_value)
+        self.cube_node["translate"] += [1, 1, 1]
+        self.cube_node["translate"] *= [1, 2, 3]
+        self.assertEqual(self.cube_node["translate"].value, new_value)
+        self.cube_node["translate"] *= [2, 2, 2]
+        self.assertEqual(self.cube_node["translate"].value, third_value)
 
     def test_set_matrix_array_value(self):
         # All of the default maya matrix attributes aren't writable, so we
@@ -877,10 +933,10 @@ class TestSetMultiAttributesDAG(unittest.TestCase):
             [1.0, 0.0, 0.0, 0.0],
         ]
 
-        self.assertCountEqual(self.cube_node["myMatrix"].value, expected_default_value)
+        self.assertEqual(self.cube_node["myMatrix"].value, expected_default_value)
         self.assertEqual(self.cube_node["translateY"].value, 0.0)
         self.cube_node["myMatrix"] = new_value
-        self.assertCountEqual(self.cube_node["myMatrix"].value, new_value)
+        self.assertEqual(self.cube_node["myMatrix"].value, new_value)
 
 
 class TestSetMultiAttributesDG(unittest.TestCase):
@@ -1035,6 +1091,7 @@ class TestMirageNodeAddAttributeMethods(unittest.TestCase):
         new_attr = self.cube_node.add_string_attr("newStringAttr")
         self.assertEqual(new_attr.value, expected_result)
 
+    # TODO: This test fails in Maya 2024; no bug report seems to match
     def test_add_string_attr_default(self):
         default = "default"
         new_attr = self.cube_node.add_string_attr(
